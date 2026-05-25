@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Orçamentos - Cupom</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            background-color: #555555;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .full-width {
+            grid-column: span 2;
+        }
+        label {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1em;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input:read-only {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .btn-small { padding: 8px; font-size: 0.9em; margin-top: 0; }
+        .btn-red { background-color: #ff0000; }
+        .btn-green { background-color: #28a745; }
+        .btn-blue { background-color: #007bff; }
+        .btn-gray { background-color: #6c757d; }
+        .btn-orange { background-color: #fd7e14; }
+        
+        .result-box {
+            background-color: #ffc107;
+            color: black;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        
+        /* Modais */
+        #configModal, #whatsappModal, #historicoModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background-color: #222;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+        .section-box {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #444;
+        }
+        .material-list {
+            margin-top: 20px;
+            border-top: 1px solid #555;
+            padding-top: 10px;
+        }
+        .material-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .action-btns {
+            display: flex;
+            gap: 5px;
+        }
+        .backup-section {
+            margin-top: 20px;
+            border-top: 1px solid #555;
+            padding-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+        .checkbox-container input {
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header" id="appHeader">Max Laser</div>
+
+    <div class="grid-container" id="mainScreen">
+        
+        <div class="input-group full-width">
+            <label>Descrição do Produto / Serviço (O que vai cortar)</label>
+            <select id="selDescricao" onchange="carregarDescricaoSelecionada()">
+                <option value="">Selecione uma descrição salva...</option>
+            </select>
+            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <input type="text" id="txtDescricao" style="flex: 1;" placeholder="Ou digite uma nova descrição..." onfocus="this.select()">
+                <button class="btn btn-blue btn-small" style="width: auto; margin-top: 0; padding: 10px 15px;" onclick="salvarDescricaoRapida()">Salvar</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Comprimento / mm</label>
+            <input type="number" id="comp" value="0" onfocus="this.select()">
+        </div>
+        <div class="input-group">
+            <label>Largura / mm</label>
+            <input type="number" id="larg" value="0" onfocus="this.select()">
+        </div>
+
+        <div class="input-group full-width">
+            <label>Tempo de Máquina (Horas : Minutos : Segundos)</label>
+            <input type="time" id="tempoMaquina" step="1" value="00:00:00" style="font-size: 32px; text-align: center; height: 60px;">
+        </div>
+
+        <div class="input-group full-width">
+            <label>Tipo de Material</label>
+            <select id="tipoMaterial" onchange="carregarMaterialSelecionado()">
+                <option value="">Selecione...</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>M² Material (Chapa)</label>
+            <input type="number" id="m2Material" value="0" step="0.01" onfocus="this.select()">
+        </div>
+        <div class="input-group">
+            <label>Material / Valor R$</label>
+            <input type="number" id="valorMaterial" value="0" step="0.01" onfocus="this.select()">
+        </div>
+
+        <div class="input-group">
+            <label>Hora Máquina / R$</label>
+            <input type="number" id="horaMaquina" value="0" step="0.01" onfocus="this.select()">
+        </div>
+        <div class="input-group">
+            <label>Lucro %</label>
+            <input type="number" id="lucro" value="0" onfocus="this.select()">
+        </div>
+
+        <button class="btn btn-red" onclick="calcular()">Calcular</button>
+        <button class="btn btn-red" onclick="abrirConfig()">Configurações</button>
+
+        <button class="btn btn-green" onclick="abrirWhatsappModal()">Compartilhar Orçamento</button>
+        
+        <button class="btn btn-blue full-width" onclick="abrirHistoricoModal()">Histórico de Orçamentos</button>
+        
+        <div class="input-group full-width">
+            <label style="text-align: center;">Valor Total R$</label>
+            <input type="text" id="valorTotal" class="result-box" readonly value="0.00">
+        </div>
+    </div>
+
+    <div id="whatsappModal">
+        <div class="modal-content">
+            <h2>Pré-visualização do Cupom</h2>
+            
+            <div class="input-group mb-3" style="margin-bottom: 15px;">
+                <label>Nome do Cliente</label>
+                <input type="text" id="nomeCliente" list="listaClientesSalvos" placeholder="Ex: João da Silva" oninput="atualizarTextoWhatsapp()">
+                <datalist id="listaClientesSalvos"></datalist>
+            </div>
+            
+            <div class="section-box">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="chkMedidas" checked onchange="atualizarTextoWhatsapp()">
+                    Mostrar Medidas no Cupom
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="chkTempo" checked onchange="atualizarTextoWhatsapp()">
+                    Mostrar Tempo de Máquina
+                </label>
+            </div>
+
+            <div class="input-group">
+                <label>Visualização do Cupom Fiscal (Editável)</label>
+                <textarea id="textoWhatsappArea" rows="12" style="background-color: #111; color: #00ff00; font-family: monospace; font-size: 0.95em; resize: vertical;"></textarea>
+            </div>
+
+            <button class="btn btn-green mt-2" onclick="enviarMensagemFinal()">Enviar Cupom e Salvar Orçamento</button>
+            <button class="btn btn-gray" onclick="fecharWhatsappModal()">Voltar</button>
+        </div>
+    </div>
+
+    <div id="historicoModal">
+        <div class="modal-content">
+            <h2>Histórico de Orçamentos</h2>
+            <p style="font-size: 0.9em; color: #ccc;">Carregue orçamentos antigos para edição.</p>
+            
+            <div class="material-list" id="listaDeOrcamentos">
+                </div>
+
+            <button class="btn btn-gray mt-2" onclick="fecharHistoricoModal()">Voltar</button>
+        </div>
+    </div>
+
+    <div id="configModal">
+        <div class="modal-content">
+            
+            <div class="section-box">
+                <h3>Dados da Empresa / Emitente</h3>
+                <div class="input-group">
+                    <label>Nome da Empresa</label>
+                    <input type="text" id="empresaNome" value="Max Laser">
+                </div>
+                <div class="input-group mt-2" style="margin-top: 8px;">
+                    <label>Endereço</label>
+                    <input type="text" id="empresaEndereco" placeholder="Rua, Número, Bairro, Cidade">
+                </div>
+                <div class="input-group mt-2" style="margin-top: 8px;">
+                    <label>Telefone / Contato</label>
+                    <input type="text" id="empresaTelefone" placeholder="(00) 00000-0000">
+                </div>
+                <button class="btn btn-green btn-small" style="margin-top: 10px;" onclick="salvarDadosEmpresa()">Salvar Dados da Empresa</button>
+            </div>
+
+            <div id="areaEditarDescricao" style="display:none; background-color: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3>Editar Descrição</h3>
+                <input type="hidden" id="editDescIndex" value="-1">
+                <input type="text" id="editDescTexto" style="margin-bottom: 10px;">
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-blue btn-small" onclick="salvarEdicaoDescricao()">Atualizar</button>
+                    <button class="btn btn-gray btn-small" onclick="cancelarEdicaoDescricao()">Cancelar</button>
+                </div>
+            </div>
+
+            <h2 id="tituloModal">Novo Material</h2>
+            <input type="hidden" id="editIndex" value="-1">
+            
+            <div class="input-group">
+                <label>Nome do Material</label>
+                <input type="text" id="novoNome">
+            </div>
+            <div class="input-group mt-2" style="margin-top: 8px;">
+                <label>M² da Chapa</label>
+                <input type="number" id="novoM2" step="0.01" onfocus="this.select()">
+            </div>
+            <div class="input-group mt-2" style="margin-top: 8px;">
+                <label>Valor da Chapa R$</label>
+                <input type="number" id="novoValor" step="0.01" onfocus="this.select()">
+            </div>
+            <div class="input-group mt-2" style="margin-top: 8px;">
+                <label>Hora Máquina Padrão R$</label>
+                <input type="number" id="novoHoraMaquina" step="0.01" onfocus="this.select()">
+            </div>
+            <div class="input-group mt-2" style="margin-top: 8px;">
+                <label>Lucro Padrão %</label>
+                <input type="number" id="novoLucro" onfocus="this.select()">
+            </div>
+            
+            <button class="btn btn-blue" onclick="salvarMaterial()">Salvar Material</button>
+            <button class="btn btn-gray" onclick="fecharConfig()">Voltar para Calculadora</button>
+
+            <div class="material-list" id="listaMateriais"></div>
+            <div class="material-list" id="listaDescricoes"></div>
+
+            <div class="backup-section">
+                <button class="btn btn-orange btn-small" onclick="exportarBackup()">Baixar Backup</button>
+                <label class="btn btn-green btn-small" style="text-align:center; cursor:pointer; margin:0;">
+                    Restaurar Backup
+                    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importarBackup(event)">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Bancos de Dados
+        let materiaisBD = JSON.parse(localStorage.getItem('materiaisMaxLaser')) || [];
+        let descricoesBD = JSON.parse(localStorage.getItem('descricoesMaxLaser')) || ["Caixa de MDF", "Pote de MDF", "Corte quadrado de MDF"];
+        let empresaBD = JSON.parse(localStorage.getItem('dadosEmpresaMaxLaser')) || { nome: "Max Laser", endereco: "", telefone: "" };
+        let clientesBD = JSON.parse(localStorage.getItem('clientesMaxLaser')) || [];
+        let orcamentosBD = JSON.parse(localStorage.getItem('orcamentosMaxLaser')) || [];
+
+        function inicializarDados() {
+            document.getElementById('appHeader').innerText = empresaBD.nome;
+            document.getElementById('empresaNome').value = empresaBD.nome;
+            document.getElementById('empresaEndereco').value = empresaBD.endereco || "";
+            document.getElementById('empresaTelefone').value = empresaBD.telefone || "";
+            atualizarListas();
+        }
+
+        function salvarDadosEmpresa() {
+            const nome = document.getElementById('empresaNome').value.trim() || "Minha Empresa";
+            const endereco = document.getElementById('empresaEndereco').value.trim();
+            const telefone = document.getElementById('empresaTelefone').value.trim();
+            empresaBD = { nome, endereco, telefone };
+            localStorage.setItem('dadosEmpresaMaxLaser', JSON.stringify(empresaBD));
+            document.getElementById('appHeader').innerText = nome;
+            alert("Dados da empresa salvos com sucesso!");
+        }
+
+        function atualizarListas() {
+            // 1. Materiais
+            const selectMat = document.getElementById('tipoMaterial');
+            selectMat.innerHTML = '<option value="">Selecione...</option>';
+            const listaMatDiv = document.getElementById('listaMateriais');
+            listaMatDiv.innerHTML = '<h3>Materiais Salvos</h3>';
+
+            materiaisBD.forEach((mat, index) => {
+                let option = document.createElement('option');
+                option.value = index;
+                option.text = mat.nome;
+                selectMat.appendChild(option);
+
+                listaMatDiv.innerHTML += `
+                    <div class="material-item">
+                        <div>
+                            <strong>${mat.nome}</strong><br>
+                            <small>${mat.m2}m² | R$ ${mat.valor} | HM: R$ ${mat.horaMaquina || 0} | Lucro: ${mat.lucro || 0}%</small>
+                        </div>
+                        <div class="action-btns">
+                            <button class="btn btn-blue btn-small" onclick="prepararEdicao(${index})">Editar</button>
+                            <button class="btn btn-red btn-small" onclick="excluirMaterial(${index})">Excluir</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 2. Descrições
+            const selectDesc = document.getElementById('selDescricao');
+            selectDesc.innerHTML = '<option value="">Selecione uma descrição salva...</option>';
+            const listaDescDiv = document.getElementById('listaDescricoes');
+            listaDescDiv.innerHTML = '<h3>Descrições de Produtos Salvas</h3>';
+
+            descricoesBD.forEach((desc, index) => {
+                let option = document.createElement('option');
+                option.value = index;
+                option.text = desc;
+                selectDesc.appendChild(option);
+
+                listaDescDiv.innerHTML += `
+                    <div class="material-item">
+                        <div><strong>${desc}</strong></div>
+                        <div class="action-btns">
+                            <button class="btn btn-blue btn-small" onclick="prepararEdicaoDescricao(${index})">Editar</button>
+                            <button class="btn btn-red btn-small" onclick="excluirDescricao(${index})">Excluir</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 3. Clientes (Autocompletar)
+            const datalistClientes = document.getElementById('listaClientesSalvos');
+            datalistClientes.innerHTML = '';
+            clientesBD.forEach(cliente => {
+                let option = document.createElement('option');
+                option.value = cliente;
+                datalistClientes.appendChild(option);
+            });
+
+            // 4. Histórico de Orçamentos
+            const listaOrcamentosDiv = document.getElementById('listaDeOrcamentos');
+            listaOrcamentosDiv.innerHTML = '';
+            if (orcamentosBD.length === 0) {
+                listaOrcamentosDiv.innerHTML = '<p>Nenhum orçamento salvo ainda.</p>';
+            } else {
+                // Mostra de trás pra frente (mais recentes primeiro)
+                orcamentosBD.slice().reverse().forEach((orc, revIndex) => {
+                    const realIndex = orcamentosBD.length - 1 - revIndex;
+                    listaOrcamentosDiv.innerHTML += `
+                        <div class="material-item" style="flex-direction: column; align-items: flex-start;">
+                            <div style="width: 100%; margin-bottom: 10px;">
+                                <strong style="color: #ffc107;">${orc.data}</strong><br>
+                                <strong>Cliente:</strong> ${orc.cliente}<br>
+                                <strong>Item:</strong> ${orc.descricao}<br>
+                                <strong>Total:</strong> R$ ${orc.valorTotal}
+                            </div>
+                            <div class="action-btns" style="width: 100%; justify-content: flex-end;">
+                                <button class="btn btn-green btn-small" onclick="carregarOrcamento(${realIndex})">Carregar Dados</button>
+                                <button class="btn btn-red btn-small" onclick="excluirOrcamento(${realIndex})">Excluir</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // Funções de Descrição
+        function carregarDescricaoSelecionada() {
+            const index = document.getElementById('selDescricao').value;
+            if (index !== "") { document.getElementById('txtDescricao').value = descricoesBD[index]; }
+        }
+
+        function salvarDescricaoRapida() {
+            const texto = document.getElementById('txtDescricao').value.trim();
+            if (texto) {
+                if (!descricoesBD.includes(texto)) {
+                    descricoesBD.push(texto);
+                    localStorage.setItem('descricoesMaxLaser', JSON.stringify(descricoesBD));
+                    atualizarListas();
+                    alert("Descrição salva!");
+                    const indexNovo = descricoesBD.indexOf(texto);
+                    document.getElementById('selDescricao').value = indexNovo;
+                } else { alert("Esta descrição já está listada."); }
+            } else { alert("Digite uma descrição antes de salvar."); }
+        }
+
+        function prepararEdicaoDescricao(index) {
+            document.getElementById('areaEditarDescricao').style.display = 'block';
+            document.getElementById('editDescTexto').value = descricoesBD[index];
+            document.getElementById('editDescIndex').value = index;
+            document.getElementById('configModal').scrollTop = 0;
+        }
+
+        function salvarEdicaoDescricao() {
+            const index = parseInt(document.getElementById('editDescIndex').value);
+            const novoTexto = document.getElementById('editDescTexto').value.trim();
+            if (novoTexto && index !== -1) {
+                descricoesBD[index] = novoTexto;
+                localStorage.setItem('descricoesMaxLaser', JSON.stringify(descricoesBD));
+                atualizarListas();
+                cancelarEdicaoDescricao();
+                alert("Descrição atualizada!");
+            }
+        }
+
+        function cancelarEdicaoDescricao() {
+            document.getElementById('areaEditarDescricao').style.display = 'none';
+            document.getElementById('editDescTexto').value = "";
+            document.getElementById('editDescIndex').value = "-1";
+        }
+
+        function excluirDescricao(index) {
+            if (confirm("Tem certeza que deseja excluir esta descrição?")) {
+                descricoesBD.splice(index, 1);
+                localStorage.setItem('descricoesMaxLaser', JSON.stringify(descricoesBD));
+                atualizarListas();
+                document.getElementById('txtDescricao').value = "";
+            }
+        }
+
+        // Funções de Material
+        function carregarMaterialSelecionado() {
+            const index = document.getElementById('tipoMaterial').value;
+            if (index !== "") {
+                const mat = materiaisBD[index];
+                document.getElementById('m2Material').value = mat.m2;
+                document.getElementById('valorMaterial').value = mat.valor;
+                document.getElementById('horaMaquina').value = mat.horaMaquina || 0;
+                document.getElementById('lucro').value = mat.lucro || 0;
+            }
+        }
+
+        function abrirConfig() {
+            document.getElementById('configModal').style.display = 'block';
+            limparFormularioMaterial();
+            cancelarEdicaoDescricao();
+        }
+
+        function fecharConfig() { document.getElementById('configModal').style.display = 'none'; }
+
+        function limparFormularioMaterial() {
+            document.getElementById('novoNome').value = "";
+            document.getElementById('novoM2').value = "";
+            document.getElementById('novoValor').value = "";
+            document.getElementById('novoHoraMaquina').value = "";
+            document.getElementById('novoLucro').value = "";
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('tituloModal').innerText = "Novo Material";
+        }
+
+        function salvarMaterial() {
+            const nome = document.getElementById('novoNome').value;
+            const m2 = parseFloat(document.getElementById('novoM2').value) || 0;
+            const valor = parseFloat(document.getElementById('novoValor').value) || 0;
+            const horaMaquina = parseFloat(document.getElementById('novoHoraMaquina').value) || 0;
+            const lucro = parseFloat(document.getElementById('novoLucro').value) || 0;
+            const index = parseInt(document.getElementById('editIndex').value);
+
+            if(nome && m2 > 0 && valor > 0) {
+                const objetoMaterial = {nome, m2, valor, horaMaquina, lucro};
+                if (index === -1) { materiaisBD.push(objetoMaterial); } 
+                else { materiaisBD[index] = objetoMaterial; }
+                localStorage.setItem('materiaisMaxLaser', JSON.stringify(materiaisBD));
+                atualizarListas();
+                limparFormularioMaterial();
+                alert("Material salvo!");
+            } else { alert("Preencha o nome, M² e valor da chapa corretamente."); }
+        }
+
+        function prepararEdicao(index) {
+            const mat = materiaisBD[index];
+            document.getElementById('novoNome').value = mat.nome;
+            document.getElementById('novoM2').value = mat.m2;
+            document.getElementById('novoValor').value = mat.valor;
+            document.getElementById('novoHoraMaquina').value = mat.horaMaquina || 0;
+            document.getElementById('novoLucro').value = mat.lucro || 0;
+            document.getElementById('editIndex').value = index;
+            document.getElementById('tituloModal').innerText = "Editando: " + mat.nome;
+            document.getElementById('configModal').scrollTop = 0;
+        }
+
+        function excluirMaterial(index) {
+            if(confirm("Tem certeza que deseja excluir este material?")) {
+                materiaisBD.splice(index, 1);
+                localStorage.setItem('materiaisMaxLaser', JSON.stringify(materiaisBD));
+                atualizarListas();
+            }
+        }
+
+        function calcular() {
+            const comp = parseFloat(document.getElementById('comp').value) || 0;
+            const larg = parseFloat(document.getElementById('larg').value) || 0;
+            const m2Material = parseFloat(document.getElementById('m2Material').value) || 1; 
+            const valorMaterial = parseFloat(document.getElementById('valorMaterial').value) || 0;
+            const horaMaquina = parseFloat(document.getElementById('horaMaquina').value) || 0;
+            const lucro = parseFloat(document.getElementById('lucro').value) || 0;
+
+            const tempoStr = document.getElementById('tempoMaquina').value;
+            let horas = 0, minutos = 0, segundos = 0;
+            
+            if (tempoStr) {
+                const partes = tempoStr.split(':');
+                horas = parseFloat(partes[0]) || 0;
+                minutos = parseFloat(partes[1]) || 0;
+                segundos = parseFloat(partes[2]) || 0;
+            }
+
+            const areaUsadaM2 = (comp * larg) / 1000000;
+            const custoPorM2 = valorMaterial / m2Material;
+            const custoMaterialCalculado = areaUsadaM2 * custoPorM2;
+
+            const tempoTotalHoras = horas + (minutos / 60) + (segundos / 3600);
+            const custoTempoCalculado = tempoTotalHoras * horaMaquina;
+
+            const custoBase = custoMaterialCalculado + custoTempoCalculado;
+            const valorFinal = custoBase * (1 + (lucro / 100));
+
+            document.getElementById('valorTotal').value = valorFinal.toFixed(2);
+        }
+
+        // --- SISTEMA DE WHATSAPP E SALVAMENTO ---
+        function abrirWhatsappModal() {
+            document.getElementById('whatsappModal').style.display = 'block';
+            atualizarTextoWhatsapp();
+        }
+
+        function fecharWhatsappModal() { document.getElementById('whatsappModal').style.display = 'none'; }
+
+        function atualizarTextoWhatsapp() {
+            const cliente = document.getElementById('nomeCliente').value.trim().toUpperCase();
+            const mostrarMedidas = document.getElementById('chkMedidas').checked;
+            const mostrarTempo = document.getElementById('chkTempo').checked;
+
+            const itemDescricao = (document.getElementById('txtDescricao').value || "NAO ESPECIFICADO").toUpperCase();
+            const comp = document.getElementById('comp').value;
+            const larg = document.getElementById('larg').value;
+            const tempo = document.getElementById('tempoMaquina').value;
+            const valorTotal = document.getElementById('valorTotal').value;
+            
+            const selectMat = document.getElementById('tipoMaterial');
+            const nomeMaterial = (selectMat.options[selectMat.selectedIndex]?.text || "NAO ESPECIFICADO").toUpperCase();
+
+            let texto = `================================\n`;
+            texto += `         ${empresaBD.nome.toUpperCase()}\n`;
+            if (empresaBD.endereco) texto += `END: ${empresaBD.endereco.toUpperCase()}\n`;
+            if (empresaBD.telefone) texto += `TEL: ${empresaBD.telefone}\n`;
+            texto += `================================\n`;
+            texto += `       CUPOM DE ORCAMENTO       \n`;
+            texto += `--------------------------------\n`;
+            
+            if (cliente) {
+                texto += `CLIENTE: ${cliente}\n`;
+                texto += `--------------------------------\n`;
+            }
+            
+            texto += `PRODUTO/SERV: ${itemDescricao}\n`;
+            texto += `MATERIAL    : ${nomeMaterial}\n`;
+            
+            if (mostrarMedidas) texto += `DIMENSOES   : ${comp}MM X ${larg}MM\n`;
+            if (mostrarTempo) texto += `TEMPO MAQ.  : ${tempo}\n`;
+            
+            texto += `--------------------------------\n`;
+            texto += `VALOR TOTAL : R$ ${valorTotal}\n`;
+            texto += `================================`;
+
+            document.getElementById('textoWhatsappArea').value = texto;
+        }
+
+        function enviarMensagemFinal() {
+            // 1. Salvar Cliente Novo
+            const cliente = document.getElementById('nomeCliente').value.trim().toUpperCase();
+            if (cliente && !clientesBD.includes(cliente)) {
+                clientesBD.push(cliente);
+                localStorage.setItem('clientesMaxLaser', JSON.stringify(clientesBD));
+            }
+
+            // 2. Salvar o Orçamento Completo
+            const dataAtual = new Date().toLocaleString('pt-BR');
+            const orcamento = {
+                data: dataAtual,
+                cliente: cliente || "NÃO INFORMADO",
+                descricao: document.getElementById('txtDescricao').value,
+                comp: document.getElementById('comp').value,
+                larg: document.getElementById('larg').value,
+                tempo: document.getElementById('tempoMaquina').value,
+                tipoMaterialIndex: document.getElementById('tipoMaterial').value,
+                m2Material: document.getElementById('m2Material').value,
+                valorMaterial: document.getElementById('valorMaterial').value,
+                horaMaquina: document.getElementById('horaMaquina').value,
+                lucro: document.getElementById('lucro').value,
+                valorTotal: document.getElementById('valorTotal').value
+            };
+            orcamentosBD.push(orcamento);
+            localStorage.setItem('orcamentosMaxLaser', JSON.stringify(orcamentosBD));
+            
+            atualizarListas(); // Atualiza a lista por trás das cortinas
+
+            // 3. Enviar para WhatsApp
+            const textoFinal = document.getElementById('textoWhatsappArea').value;
+            const url = `https://wa.me/?text=${encodeURIComponent(textoFinal)}`;
+            window.open(url, '_blank');
+            fecharWhatsappModal();
+        }
+
+        // --- SISTEMA DE HISTÓRICO ---
+        function abrirHistoricoModal() {
+            document.getElementById('historicoModal').style.display = 'block';
+        }
+        
+        function fecharHistoricoModal() {
+            document.getElementById('historicoModal').style.display = 'none';
+        }
+
+        function carregarOrcamento(index) {
+            const orc = orcamentosBD[index];
+            document.getElementById('txtDescricao').value = orc.descricao;
+            document.getElementById('comp').value = orc.comp;
+            document.getElementById('larg').value = orc.larg;
+            document.getElementById('tempoMaquina').value = orc.tempo;
+            document.getElementById('tipoMaterial').value = orc.tipoMaterialIndex;
+            document.getElementById('m2Material').value = orc.m2Material;
+            document.getElementById('valorMaterial').value = orc.valorMaterial;
+            document.getElementById('horaMaquina').value = orc.horaMaquina;
+            document.getElementById('lucro').value = orc.lucro;
+            document.getElementById('valorTotal').value = orc.valorTotal;
+            document.getElementById('nomeCliente').value = orc.cliente !== "NÃO INFORMADO" ? orc.cliente : "";
+            
+            fecharHistoricoModal();
+            alert("Orçamento carregado com sucesso!");
+        }
+
+        function excluirOrcamento(index) {
+            if (confirm("Deseja realmente apagar este orçamento do histórico?")) {
+                orcamentosBD.splice(index, 1);
+                localStorage.setItem('orcamentosMaxLaser', JSON.stringify(orcamentosBD));
+                atualizarListas();
+            }
+        }
+
+        // --- BACKUP GERAL ---
+        function exportarBackup() {
+            const dadosCompletos = { 
+                materiais: materiaisBD, 
+                descricoes: descricoesBD,
+                empresa: empresaBD,
+                clientes: clientesBD,
+                orcamentos: orcamentosBD
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadosCompletos));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "sistema_orcamentos_backup.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importarBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dadosImportados = JSON.parse(e.target.result);
+                    if(dadosImportados.materiais && dadosImportados.descricoes) {
+                        materiaisBD = dadosImportados.materiais;
+                        descricoesBD = dadosImportados.descricoes;
+                        if(dadosImportados.empresa) empresaBD = dadosImportados.empresa;
+                        if(dadosImportados.clientes) clientesBD = dadosImportados.clientes;
+                        if(dadosImportados.orcamentos) orcamentosBD = dadosImportados.orcamentos;
+                        
+                        localStorage.setItem('materiaisMaxLaser', JSON.stringify(materiaisBD));
+                        localStorage.setItem('descricoesMaxLaser', JSON.stringify(descricoesBD));
+                        localStorage.setItem('dadosEmpresaMaxLaser', JSON.stringify(empresaBD));
+                        localStorage.setItem('clientesMaxLaser', JSON.stringify(clientesBD));
+                        localStorage.setItem('orcamentosMaxLaser', JSON.stringify(orcamentosBD));
+                        
+                        inicializarDados();
+                        alert("Todos os dados do sistema foram restaurados!");
+                    } else { alert("Arquivo de backup incompatível."); }
+                } catch (error) { alert("Erro ao ler o arquivo de backup."); }
+            };
+            reader.readAsText(file);
+        }
+
+        window.onload = inicializarDados;
+    </script>
+</body>
+</html>
