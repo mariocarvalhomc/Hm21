@@ -601,19 +601,38 @@
         function fecharHistoricoModal() { document.getElementById('historicoModal').style.display = 'none'; }
 
         function carregarOrcamento(index) {
-            const orc = orcamentosBD[index];
-            document.getElementById('txtDescricao').value = orc.descricao || "";
-            document.getElementById('comp').value = orc.comp || 0;
-            document.getElementById('larg').value = orc.larg || 0;
-            document.getElementById('tempoMaquina').value = orc.tempo || "00:00:00";
-            document.getElementById('tipoMaterial').value = orc.tipoMaterialIndex || "";
-            document.getElementById('m2Material').value = orc.m2Material || 1;
-            document.getElementById('valorMaterial').value = orc.valorMaterial || 0;
-            document.getElementById('horaMaquina').value = orc.horaMaquina || 0;
-            document.getElementById('lucro').value = orc.lucro || 0;
-            document.getElementById('valorTotal').value = orc.valorTotal || 0;
-            document.getElementById('nomeCliente').value = orc.cliente !== "NÃO INFORMADO" ? orc.cliente : "";
-            fecharHistoricoModal(); alert("Orçamento carregado!");
+            try {
+                const orc = orcamentosBD[index];
+                if (!orc) return;
+                
+                document.getElementById('txtDescricao').value = orc.descricao || "";
+                document.getElementById('comp').value = orc.comp || "";
+                document.getElementById('larg').value = orc.larg || "";
+                
+                // Proteção contra o Google Sheets transformando horas em formato de Data
+                let tempoStr = String(orc.tempo || "00:00:00");
+                if (tempoStr.includes("Z") || tempoStr.includes("T") || tempoStr.length > 8) {
+                    tempoStr = "00:00:00"; 
+                }
+                document.getElementById('tempoMaquina').value = tempoStr;
+                
+                document.getElementById('tipoMaterial').value = orc.tipoMaterialIndex || "";
+                document.getElementById('m2Material').value = orc.m2Material || "";
+                document.getElementById('valorMaterial').value = orc.valorMaterial || "";
+                document.getElementById('horaMaquina').value = orc.horaMaquina || "";
+                document.getElementById('lucro').value = orc.lucro || "";
+                document.getElementById('valorTotal').value = orc.valorTotal || "0.00";
+                
+                let clienteNome = orc.cliente || "";
+                document.getElementById('nomeCliente').value = clienteNome !== "NÃO INFORMADO" ? clienteNome : "";
+                
+                // Fecha a tela de histórico automaticamente
+                fecharHistoricoModal();
+                
+            } catch (e) {
+                console.error("Erro ao carregar o orçamento:", e);
+                alert("Ocorreu um erro ao tentar ler este orçamento da planilha.");
+            }
         }
 
         function excluirOrcamento(index) {
